@@ -1,57 +1,60 @@
 const express = require('express'),
-    app = express(),
-    passport = require('passport'),
-    auth = require('./auth'),
-    cookieParser = require('cookie-parser'),
-    cookieSession = require('cookie-session');
+  app = express(),
+  passport = require('passport'),
+  passportJwt = require('passport-jwt'),
+  auth = require('./auth'),
+  token = require('./token'),
+  users = require('./users')
 
+const jwtOptions = {
+  jwtFromRequest: passportJwt.ExtractJwt.fromAuthHeaderWithScheme('Ratina'),
+  secretOrKey: process.env.MEASUREMENTS_AUTH_TOKEN_SECRET,
+  issuer: process.env.MEASUREMENTS_AUTH_TOKEN_ISSUER,
+  audience: process.env.MEASUREMENTS_AUTH_TOKEN_AUDIENCE
+}
 
-auth(passport);
-app.use(passport.initialize());
-app.use(cookieSession({
-    name: 'session',
-    keys: [process.env.MEASUREMENTS_COOKIE_KEY],
-    maxAge: 24 * 60 * 60 * 1000
-}));
-app.use(cookieParser());
+passport.use(new passportJwt.Strategy(jwtOptions, (payload, done) => {
+  const user = users.getUserById(parseInt(payload.sub))
+  if (user) {
+    return done(null, user, payload)
+  }
+  return done()
+}))
 
+auth(passport)
+app.use(passport.initialize())
 
 app.get('/', (req, res) => {
-    if (req.session.token) {
-        res.cookie('token', req.session.token);
-        res.json({
-            status: 'session cookie set'
-        });
-    } else {
-        res.cookie('token', '')
-        res.json({
-            status: 'session cookie not set'
-        });
-    }
-});
+  return 'hiho'
+})
 
 app.get('/auth/google', passport.authenticate('google', {
-   scope: [ 'profile', 'email', 'https://www.googleapis.com/auth/userinfo.email']
-}));
+  scope: ['profile', 'email', 'https://www.googleapis.com/auth/userinfo.email']
+}))
 
 app.get('/auth/google/callback',
-    passport.authenticate('google', {
-        failureRedirect: '/'
-    }),
-    (req, res) => {
-        console.log(req.user.profile.emails[0].value);
-        req.session.token = req.user.token;
-        res.cookie('token', req.user.token);
-        res.redirect('/');
-    }
-);
+  passport.authenticate('google', {
+    failureRedirect: '/'
+  }),
+  (req, res) => {
+    console.log(req.user.profile.emails[0].value)
+    res.redirect('/')
+  }
+)
 
 app.get('/logout', (req, res) => {
-    req.logout();
-    req.session = null;
-    res.redirect('/');
-});
+  req.logout()
+  res.redirect('/')
+})
+
+app.get('/api/secure',
+  // This request must be authenticated using a JWT, or else we will fail
+  passport.authenticate(['jwt'], { session: false }),
+  (req, res) => {
+    res.send('Secure response from ' + JSON.stringify(req.user));
+  }
+)
 
 app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-});
+  console.log('Server is running on port 3000');
+})
