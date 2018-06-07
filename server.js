@@ -14,7 +14,7 @@ const jwtOptions = {
 }
 
 passport.use(new passportJwt.Strategy(jwtOptions, (payload, done) => {
-  const user = users.getUserById(parseInt(payload.sub))
+  const user = users.getUserById(payload.sub)
   if (user) {
     return done(null, user, payload)
   }
@@ -38,7 +38,8 @@ app.get('/auth/google/callback',
   }),
   (req, res) => {
     console.log(req.user.profile.emails[0].value)
-    res.redirect('/')
+    res.json({token: token.generateAccessToken(req.user.profile.emails[0].value)})
+    // todo : make refreshtoken for user
   }
 )
 
@@ -51,10 +52,10 @@ app.get('/api/secure',
   // This request must be authenticated using a JWT, or else we will fail
   passport.authenticate(['jwt'], { session: false }),
   (req, res) => {
-    res.send('Secure response from ' + JSON.stringify(req.user));
+    res.send('Secure response from ' + JSON.stringify(req.user))
   }
 )
 
 app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+  console.log('Server is running on port 3000')
 })

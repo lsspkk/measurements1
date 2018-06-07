@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken')
 // Generate an Access Token for the given User ID
 module.exports = { generateAccessToken: (userId) => {
   // How long will the token be valid for
+  console.log(2, userId.toString())
+  console.log(1, userId)
   const expiresIn = '1 hour'
   // Which service issued the token
   const secret = process.env.MEASUREMENTS_AUTH_TOKEN_SECRET
