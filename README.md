@@ -7,4 +7,5 @@ Get your Google API keys, and set them up in a file e.g. env.sh outside version 
           export GOOGLE_CLIENT_SECRET=[your own client secret]
           
 In Bash run the script like this to get environment variables set up for your shell
+          
           . ./env.sh
