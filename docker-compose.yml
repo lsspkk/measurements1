@@ -4,7 +4,9 @@ services:
 
   postgres_test:
     image: postgres:11-alpine
-    build: './database/Dockerfile'
+    build: 
+      context: ./database
+      dockerfile: Dockerfile
     ports:
       - "5432:5432"
     expose:
@@ -28,6 +30,7 @@ services:
       GOOGLE_CLIENT_ID: $GOOGLE_CLIENT_ID
       GOOGLE_CLIENT_SECRET: $GOOGLE_CLIENT_SECRET
       MEASUREMENTS_DEFAULT_USER: $MEASUREMENTS_DEFAULT_USER
+      POSTGRES_PW: $POSTGRES_PW
 
   #postgres_dev:
     #image: postgres:11-alpine
@@ -38,6 +41,6 @@ services:
       #POSTGRES_USER: measurements
       #POSTGRES_PASSWORD: $POSTGRES_PW
 
-volumes:
-   measurements-postgresql-volume:
-    external: true
+# volumes:
+#   measurements-postgresql-volume:
+#    external: true
