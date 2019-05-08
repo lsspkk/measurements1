@@ -2,7 +2,7 @@ var knex = require('knex')({
   client: 'pg',
   connection: {
     user: 'measurements',
-    password: 'SuperSecret.200',
+    password: process.env.POSTGRES_PW,
     host: '192.168.99.100',
     database: 'db_test'
   }
