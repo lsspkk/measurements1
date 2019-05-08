@@ -4,7 +4,8 @@ const passport = require('passport')
 const cookieSession = require('cookie-session')
 const cookieParser = require('cookie-parser')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
-
+const { body, validationResult } = require('express-validator/check')
+const database = require('./database')
 app.use(express.static('static'))
 
 app.use(cookieParser())
@@ -14,9 +15,9 @@ app.use(cookieSession({
   keys: ['randomstringhere', 'randomstringthere'],
   name: 'measurements1_app'
 }))
-app.use(passport.initialize()); // Used to initialize passport
-app.use(passport.session()); // Used to persist login sessions
-
+app.use(passport.initialize()) // Used to initialize passport
+app.use(passport.session()) // Used to persist login sessions
+app.use(express.json())
 
 passport.use(new GoogleStrategy({
     clientID:  process.env.GOOGLE_CLIENT_ID,
@@ -32,6 +33,9 @@ passport.use(new GoogleStrategy({
 // email saved to cooke, whole profile is too long -> empty session, id would be better
 passport.serializeUser((user, done) => {
   // console.log("serialized", user.emails[0].value)
+  if( process.env.MEASUREMENTS_DEFAULT_USER ) {
+    user = { 'emails': [ { 'value': process.env.MEASUREMENTS_DEFAULT_USER} ], 'userid': '1' }
+  }
   done(null, user.emails[0].value)
 })
 // Used to decode the received cookie and persist session
@@ -42,26 +46,39 @@ passport.deserializeUser((user, done) => {
 
 // Middleware to check if the user is authenticated
 function isUserAuthenticated(req, res, next) {
-  console.log(req.session) // to see what passport provides
+  if( process.env.MEASUREMENTS_DEFAULT_USER ) {
+    req.session.passport = { 'user': process.env.MEASUREMENTS_DEFAULT_USER, 'userid': '1' }
+  }
+
   if (req.session && req.session.passport && req.session.passport.user) {
-    console.log("passport ok", req.session.passport.user)
-    next()
+    console.log("passport ok: ", req.session.passport)
   } 
   else {
     res.send('<a href="/auth/google">Please login!</a>')
   }
+  next()
 }
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "http://localhost:8080");
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept,Access-Control-Allow-Credentials");
-  next()
+  res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+  if( req.method === 'OPTIONS') {
+    res.send(200)
+  }
+  else {
+    next()
+  }
 })
 
 
 app.get('/', (req, res) => {
   res.send('<html><h1>hiho</h1><a href="/auth/google">Login</a><div></div></html>')
+})
+
+app.get('/api/v1/measure', (req,res)=> {
+
 })
 
 app.get('/auth/google', passport.authenticate('google', {
@@ -79,7 +96,7 @@ app.get('/auth/google/callback', passport.authenticate('google'), (req, res) => 
     res.redirect('/secure')
   }
   else {
-    res.send('<div>Login failed</div><a href="/auth/google">try again!</a>')
+    res.send('<h3>Tunnistamaton käyttäjä</h3><a href="/auth/google">Kirjaudu</a>')
   }
 })
 app.get('/user', isUserAuthenticated, (req, res) => {
@@ -102,19 +119,6 @@ app.listen(3000, () => {
   console.log('Server is running on port 3000')
 })
 
-app.get('/measurement', (req, res) => {
-  console.log(req.session.passport.user)
-  res.send([ {name:'mood', min:0, max:10}, {name:'energy', min:0, max:10}])
-})
-app.get('/measurement/:name', (req, res) => {
-  console.log(req.session.passport.user)
-  console.log('measurements from '+name)
-  res.send([ 
-    {date:'2018-10-15T12:12:00.000Z', value:5},
-    {date:'2018-10-15T18:12:00.000Z', value:6},
-    {date:'2018-10-16T08:12:00.000Z', value:8}
-  ])
-})
 app.get('/group', (req, res) => {
   console.log(req.session.passport.user)
   res.send([{name:'kotivoima', id:'ljlajsdf9879asd7f9879a'}])
@@ -123,4 +127,24 @@ app.get('/group:id', (req, res) => {
   console.log(req.session.passport.user)
   console.log('users from group:'+id)
   res.send([{name:'Lasse', photo:'someplace.png', id:'987a9sd7f'}, {name:'Johanna', photo:'someplace2.jpg', id:'d9s879f'}])
+})
+
+app.get('/measurement/:measurement_id', isUserAuthenticated, (req, res) => {
+  database.getMeasurement(req.session.passport.userid, req.params.measurement_id).then(rows => res.send(rows))
+})
+app.put('/measurement/:measurement_id', 
+[body('timestamp').isISO8601().toDate(),
+body('value').isNumeric().toInt()],
+  isUserAuthenticated, 
+  (req, res, next) => {
+    var errors = validationResult(req)
+    if( !errors.isEmpty() ) {
+      return res.status(400).json({errors: errors.array()})
+    }
+    database.putMeasurement(req.session.passport.userid, req.params.measurement_id, req.body.value, req.body.timestamp)
+    .then(ok => { res.sendStatus(200)})
+    .catch(e => res.status(500).json({errors: e.message}))
+})
+app.get('/measure', isUserAuthenticated, (req, res) => {
+  database.getMeasure(req.session.passport.userid).then(rows => res.send(rows))
 })

@@ -1,0 +1,43 @@
+version: "2"
+
+services:
+
+  postgres_test:
+    image: postgres:11-alpine
+    build: './database/Dockerfile'
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: db_test
+      POSTGRES_USER: measurements
+      POSTGRES_PASSWORD: $POSTGRES_PW
+  
+  api:
+    image: node:alpine
+    build: .
+    command: npm start
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres_test
+    environment:
+      GOOGLE_CLIENT_ID: $GOOGLE_CLIENT_ID
+      GOOGLE_CLIENT_SECRET: $GOOGLE_CLIENT_SECRET
+      MEASUREMENTS_DEFAULT_USER: $MEASUREMENTS_DEFAULT_USER
+
+  #postgres_dev:
+    #image: postgres:11-alpine
+    #volumes:
+      #- measurements-postgresql-volume:/var/lib/postgresql/data
+    #environment:
+      #POSTGRES_DB: db_dev
+      #POSTGRES_USER: measurements
+      #POSTGRES_PASSWORD: $POSTGRES_PW
+
+volumes:
+   measurements-postgresql-volume:
+    external: true
