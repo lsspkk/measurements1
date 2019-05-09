@@ -18,8 +18,7 @@ express-validator
 https://github.com/chriso/validator.js#sanitizers
 https://medium.freecodecamp.org/how-to-make-input-validation-simple-and-clean-in-your-express-js-app-ea9b5ff5a8a7
 
-# Database
-Let's use dockerized postgresql
+# Database: dockerized postgresql
 
 npm install --save pg
 npm install --save knex
@@ -34,8 +33,12 @@ But we use https://knexjs.org/ which is like "plain SQL with javascript syntax".
 
 
 
-# Docker
+## Docker
 docker-machine ip
 
-## psql setup
+## backups
+? how to get backups and move database contents to another server
+
+## create postgresql database
 docker exec -i measurements1_postgres_test_1 psql -U measurements -d db_test < database/test_data.sql
+
