@@ -1,6 +1,8 @@
-#!/bin/bash
+#!/usr/bin/bash
 . ../env.sh
 
+# docker-machine start default
+# docker-machine env
 docker stop measurements1_postgres_test_1
 docker rm measurements1_postgres_test_1
 docker-compose up -d postgres_test

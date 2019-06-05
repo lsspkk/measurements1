@@ -1,48 +1,41 @@
 
-INSERT INTO "measurementuser" (id, username, email) VALUES (1, 'Test1', 'tester@test.fi');
-INSERT INTO "measurementuser" (id, username, email) VALUES (2, 'Test2', 'tester2@test.fi');
-INSERT INTO "measurementuser" (id, username, email) VALUES (3, 'Test3', 'tester3@test.fi');
-INSERT INTO "measurementuser" (id, username, email) VALUES (4, 'Test4', 'tester4@test.fi');
+INSERT INTO "measurementuser" (id, username, email) 
+VALUES 
+  (1, 'Test1', 'tester@test.fi'),
+  (2, 'Test2', 'tester2@test.fi'),
+  (3, 'Test3', 'tester3@test.fi'),
+  (4, 'Test4', 'tester4@test.fi');
 
-INSERT INTO "team"
-  (id, title, info)
+INSERT INTO "team" (id, title, info)
 VALUES
-  (1, 'Testteam1', 'We want to share our measurements results');
-INSERT INTO "team"
-  (id, title, info)
-VALUES
+  (1, 'Testteam1', 'We want to share our measurements results'),
   (2, 'Testteam2', 'We want to share our mood results');
 
 
-INSERT INTO "teammember" (id, is_admin, team_id, measurementuser_id) VALUES (1, true, 1, 1);
-INSERT INTO "teammember" (id, is_admin, team_id, measurementuser_id) VALUES (2, true, 2, 2);
-INSERT INTO "teammember" (id, is_admin, team_id, measurementuser_id) VALUES (3, false, 1, 3);
-INSERT INTO "teammember" (id, is_admin, team_id, measurementuser_id) VALUES (4, false, 2, 4);
+INSERT INTO "teammember" (id, is_admin, team_id, measurementuser_id) 
+VALUES 
+ (1, true, 1, 1),
+ (2, true, 2, 2),
+ (3, false, 1, 3),
+ (4, false, 2, 4);
 
 
-INSERT INTO "teaminvitation"
-  (id, response, team_id, inviter_id, invited_id)
+INSERT INTO "teaminvitation" (id, response, team_id, inviter_id, invited_id)
 VALUES
-  (1, '', 2, 2, 1);
-INSERT INTO "teaminvitation"
-  (id, response, team_id, inviter_id, invited_id)
-VALUES
+  (1, '', 2, 2, 1),
   (2, 'declined', 1, 1, 2);
 
 
-INSERT INTO "measure"
-  (measurementuser_id,id, name, type, low_limit, high_limit)
-VALUES
-  (-1, 1, 'Mood', 'slider', 0, 100 );
-INSERT INTO "measure"
-  (measurementuser_id,id, name, type, low_limit, high_limit)
-VALUES
-  (-1, 2, 'Energy', 'slider', 0, 100 );
+INSERT INTO "measure" (measurementuser_id,id, name, type, low_limit, high_limit)
+VALUES 
+ (-1, 1, 'Mood', 'slider', 0, 100 ),
+ (-1, 2, 'Energy', 'slider', 0, 100 );
 
 
-INSERT INTO "teammeasure" (id, measure_id, team_id) VALUES (1, 1, 1);
-INSERT INTO "teammeasure" (id, measure_id, team_id) VALUES (2, 2, 1);
-INSERT INTO "teammeasure" (id, measure_id, team_id) VALUES (3, 1, 2);
+INSERT INTO "teammeasure" (id, measure_id, team_id) 
+VALUES (1, 1, 1),
+ (2, 2, 1),
+ (3, 1, 2);
 
 
 

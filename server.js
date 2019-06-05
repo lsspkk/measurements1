@@ -6,10 +6,9 @@ const cookieParser = require('cookie-parser')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const { body, validationResult } = require('express-validator/check')
 const database = require('./database')
+
 app.use(express.static('static'))
-
 app.use(cookieParser())
-
 app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000, // One day in milliseconds
   keys: ['randomstringhere', 'randomstringthere'],
@@ -19,14 +18,16 @@ app.use(passport.initialize()) // Used to initialize passport
 app.use(passport.session()) // Used to persist login sessions
 app.use(express.json())
 
+
+
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: 'http://localhost:3000/auth/google/callback'
 },
-(accessToken, refreshToken, user, done) => {
-  done(null, user) // passes the profile data to serializeUser
-}
+  (accessToken, refreshToken, user, done) => {
+    done(null, user) // passes the profile data to serializeUser
+  }
 ))
 
 // Used to stuff a piece of information into a cookie
@@ -45,7 +46,7 @@ passport.deserializeUser((user, done) => {
 })
 
 // Middleware to check if the user is authenticated
-function isUserAuthenticated (req, res, next) {
+function isUserAuthenticated(req, res, next) {
   if (process.env.MEASUREMENTS_DEFAULT_USER) {
     req.session.passport = { 'user': process.env.MEASUREMENTS_DEFAULT_USER, 'userid': '1' }
   }
@@ -110,34 +111,61 @@ app.get('/secure', isUserAuthenticated, (req, res) => {
   // res.send('Secure response to ' + req.session.passport.user + '<div><img src="'+req.session.photo+ '"></div>')
 })
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000')
-})
-
 app.get('/group', isUserAuthenticated, (req, res) => {
   database.getGroupByMember(req.session.passport.userid).then(rows => res.send(rows))
 })
 
-app.get('/group:id', (req, res) => {
-  console.log(req.session.passport.user)
-  console.log('users from group:' + id)
-  res.send([{ name: 'Lasse', photo: 'someplace.png', id: '987a9sd7f' }, { name: 'Johanna', photo: 'someplace2.jpg', id: 'd9s879f' }])
+app.get('/group/:id/member', (req, res) => {
+  console.log(req.params.id)
+  database.getGroupMembers(req.params.id).then(rows => res.send(rows))
+})
+app.get('/group/:id/measure', (req, res) => {
+  database.getGroupMeasures(req.params.id).then(rows => res.send(rows))
 })
 
-app.get('/measurement/:measurement_id', isUserAuthenticated, (req, res) => {
-  database.getMeasurement(req.session.passport.userid, req.params.measurement_id).then(rows => res.send(rows))
-})
-
-app.post('/measurement/:measurement_id',
-  [body('timestamp').isISO8601().toDate(),
-    body('value').isNumeric().toInt()],
+app.post('/group/:id/invitation',
+  [body('invited').isNumeric().toInt()],
   isUserAuthenticated,
   (req, res, next) => {
     var errors = validationResult(req)
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() })
     }
-    database.postMeasurement(req.session.passport.userid, req.params.measurement_id, req.body.value, req.body.timestamp)
+    database.getGroupMembers(req.params.id).then(rows => {
+      var exists = rows.filter((item) => (item.id == req.body.invited))
+      if( exists && exists.length > 0 ) throw 'User already in group'
+    })
+    .then(database.getGroupInvitationByInvited(req.body.invited).then(rows => {
+      var exists = rows.filter((item) => (item.group_id == req.params.id))
+      if( exists && exists.length > 0 ) throw 'User already invited to group'
+    }))
+    .then(database.postGroupInvitation(req.params.id, req.session.passport.userid, req.body.invited)
+        .then(ok => { res.sendStatus(200) })
+        .catch(e => res.status(500).json({ errors: e.message })))
+    .catch(msg => res.status(400).json({errors: [ msg ]}))
+  })
+
+app.get('/invitationresponse', isUserAuthenticated, (req, res) => {
+  database.getGroupInvitationByInviter(req.session.passport.userid).then(rows => res.send(rows))
+})
+app.get('/invitationrequest', isUserAuthenticated, (req, res) => {
+  database.getGroupInvitationByInvited(req.session.passport.userid, '').then(rows => res.send(rows))
+})
+
+app.get('/measurement/:measure_id', isUserAuthenticated, (req, res) => {
+  database.getMeasurement(req.session.passport.userid, req.params.measure_id).then(rows => res.send(rows))
+})
+
+app.post('/measurement/:measure_id',
+  [body('timestamp').isISO8601().toDate(),
+  body('value').isNumeric().toInt()],
+  isUserAuthenticated,
+  (req, res, next) => {
+    var errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+    database.postMeasurement(req.session.passport.userid, req.params.measure_id, req.body.value, req.body.timestamp)
       .then(ok => { res.sendStatus(200) })
       .catch(e => res.status(500).json({ errors: e.message }))
   })
@@ -145,3 +173,10 @@ app.post('/measurement/:measurement_id',
 app.get('/measure', isUserAuthenticated, (req, res) => {
   database.getMeasure(req.session.passport.userid).then(rows => res.send(rows))
 })
+
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000')
+})
+
+module.exports = app
