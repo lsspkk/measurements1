@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 . ../env.sh
 
 # docker-machine start default

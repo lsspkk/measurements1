@@ -18,16 +18,14 @@ app.use(passport.initialize()) // Used to initialize passport
 app.use(passport.session()) // Used to persist login sessions
 app.use(express.json())
 
-
-
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: 'http://localhost:3000/auth/google/callback'
 },
-  (accessToken, refreshToken, user, done) => {
-    done(null, user) // passes the profile data to serializeUser
-  }
+(accessToken, refreshToken, user, done) => {
+  done(null, user) // passes the profile data to serializeUser
+}
 ))
 
 // Used to stuff a piece of information into a cookie
@@ -46,7 +44,7 @@ passport.deserializeUser((user, done) => {
 })
 
 // Middleware to check if the user is authenticated
-function isUserAuthenticated(req, res, next) {
+function isUserAuthenticated (req, res, next) {
   if (process.env.MEASUREMENTS_DEFAULT_USER) {
     req.session.passport = { 'user': process.env.MEASUREMENTS_DEFAULT_USER, 'userid': '1' }
   }
@@ -131,18 +129,22 @@ app.post('/group/:id/invitation',
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() })
     }
+    res.status(200)
     database.getGroupMembers(req.params.id).then(rows => {
       var exists = rows.filter((item) => (item.id == req.body.invited))
-      if( exists && exists.length > 0 ) throw 'User already in group'
+      if (exists && exists.length > 0) throw new Error('User already in group')
     })
-    .then(database.getGroupInvitationByInvited(req.body.invited).then(rows => {
-      var exists = rows.filter((item) => (item.group_id == req.params.id))
-      if( exists && exists.length > 0 ) throw 'User already invited to group'
-    }))
-    .then(database.postGroupInvitation(req.params.id, req.session.passport.userid, req.body.invited)
-        .then(ok => { res.sendStatus(200) })
-        .catch(e => res.status(500).json({ errors: e.message })))
-    .catch(msg => res.status(400).json({errors: [ msg ]}))
+      .then(ok => { return database.getGroupInvitationByInvited(req.body.invited) })
+      .then(rows => {
+        var exists = rows.filter((item) => (item.group_id == req.params.id))
+        if (exists && exists.length > 0) throw new Error('User already invited to group')
+      })
+      .then(
+        database.postGroupInvitation(req.params.id, req.session.passport.userid, req.body.invited)
+          .then()
+          .catch((e) => res.status(500).json({ errors: e.message })
+          ))
+      .catch(e => { res.status(400).json({ errors: e.message }) })
   })
 
 app.get('/invitationresponse', isUserAuthenticated, (req, res) => {
@@ -158,7 +160,7 @@ app.get('/measurement/:measure_id', isUserAuthenticated, (req, res) => {
 
 app.post('/measurement/:measure_id',
   [body('timestamp').isISO8601().toDate(),
-  body('value').isNumeric().toInt()],
+    body('value').isNumeric().toInt()],
   isUserAuthenticated,
   (req, res, next) => {
     var errors = validationResult(req)
@@ -166,14 +168,13 @@ app.post('/measurement/:measure_id',
       return res.status(400).json({ errors: errors.array() })
     }
     database.postMeasurement(req.session.passport.userid, req.params.measure_id, req.body.value, req.body.timestamp)
-      .then(ok => { res.sendStatus(200) })
+      .then(ok => { res.status(200) })
       .catch(e => res.status(500).json({ errors: e.message }))
   })
 
 app.get('/measure', isUserAuthenticated, (req, res) => {
   database.getMeasure(req.session.passport.userid).then(rows => res.send(rows))
 })
-
 
 app.listen(3000, () => {
   console.log('Server is running on port 3000')
