@@ -1,7 +1,6 @@
 # measurements1
 
-Get your Google API keys, and for example 
-set them up in a file e.g. env.sh outside version control folder, with this contents
+Get your Google API keys, and set them up in a file e.g. env.sh outside version control folder, with this contents
 
           #!/usr/bin/env sh
           export GOOGLE_CLIENT_ID=[your own client id]
@@ -19,9 +18,12 @@ express-validator
 https://github.com/chriso/validator.js#sanitizers
 https://medium.freecodecamp.org/how-to-make-input-validation-simple-and-clean-in-your-express-js-app-ea9b5ff5a8a7
 
-# Database: dockerized postgresql
+# Database
+Let's use dockerized postgresql
 
-npm install --save pg knex
+npm install --save pg
+npm install --save knex
+
 
 Here's some interesting links
 https://codefresh.io/docs/docs/yaml-examples/examples/populate-a-database-with-existing-data/
@@ -32,27 +34,19 @@ But we use https://knexjs.org/ which is like "plain SQL with javascript syntax".
 
 
 
-## Docker
-To find out what address to contact
+# Docker
 docker-machine ip
 
-More environment variables, e.g. to env.sh 
-          export POSTGRES_HOST=[docker machine ip]
-          export POSTGRES_PW=[postgres password]
-
-
-## backups
-? how to get backups and move database contents to another server
-
-## create postgresql database
+## psql setup
 docker exec -i measurements1_postgres_test_1 psql -U measurements -d db_test < database/test_data.sql
 
 
-# tests
-export MEASUREMENTS_DEFAULT_USER=tester@test.fi
+# curling backend
 
-npm install --save mocha chai chai-http
-database/test_data.sql
+curl -i -X PUT -d '{"value": 50, "timestamp": "2019-04-18T20:02:00.000Z" }' \
+    -H "Content-Type: application/json" \
+    192.168.99.100:3000/measurement/1
 
-npm test
-
+curl -i -X POST -d '{"invited": "tester2@test.fi" }' \
+    -H "Content-Type: application/json" \
+    localhost:3000/group/1/invitation

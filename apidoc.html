@@ -1,0 +1,45 @@
+<html>
+    <body>
+            <pre>
+
+get /group  database.getGroupByMember(req.session.passport.userid)
+// post group
+// put group
+// delete group ? ask confirmation, send mail for all
+
+get /group/:id/member  database.getGroupMembers(req.params.id)
+// post groupMember
+// delete groupMember
+
+get /group/:id/measure  database.getGroupMeasures(req.params.id)
+post /group/:id/measure  database.postGroupMeasure(req.params.id, req.body.add_measure_id)
+//delete /group/:id/measure/:measure_id
+
+// ! get /group/:id/measurement/:measure_id
+
+get /group/:id/invitation database.getGroupInvitations(req.params.id)
+post /group/:id/invitation,
+  [body invited.isEmail(), invited_id = database.getUserId(req.body.invited)],
+      database.postGroupInvitation(req.params.id, req.session.passport.userid, invited_id))
+  // ! send mail to invited user
+      
+// delete /group/:id/invitation/:invitation_id
+
+get /invitationresponse database.getGroupInvitationByInviter(req.session.passport.userid)
+get /invitationrequest database.getGroupInvitationByInvited(req.session.passport.userid)
+
+
+get /measurement/:measure_id database.getMeasurement(req.session.passport.userid, req.params.measure_id)
+post /measurement/:measure_id,
+  [body timestamp).isISO8601().toDate(),body value).isNumeric().toInt()],
+    database.postMeasurement(req.session.passport.userid, req.params.measure_id, req.body.value, req.body.timestamp)
+
+get /measure database.getMeasure(req.session.passport.userid)
+// post
+// put
+// delete  ?
+
+
+</pre>
+</body>
+</html>

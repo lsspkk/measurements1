@@ -15,7 +15,6 @@ module.exports = {
       .select('id')
       .where({ 'email': email })
       .then(rows => { return rows[0].id })
-      .error(e => (-1))
   },
 
   getMeasurement(user_id, measure_id) {
@@ -29,6 +28,7 @@ module.exports = {
       .insert({ 'measurementuser_id': user_id, 'measure_id': measure_id, 'val': value, 'stamp': stamp })
   },
   getMeasure(user_id) {
+    console.log('getMeasure('+user_id+')')
     return knex.from('measure')
       .select('id', 'name', 'type', { 'min': 'low_limit' }, { 'max': 'high_limit' })
       .where({ measurementuser_id: user_id })
@@ -46,12 +46,22 @@ module.exports = {
   getGroupMembers(group_id) {
     return knex.from('teammember').where({ 'team_id': group_id })
       .join('measurementuser', 'measurementuser.id', '=', 'teammember.measurementuser_id')
-      .select({ 'id': 'measurementuser.id' }, { 'username': 'measurementuser.username' }, { 'email': 'measurementuser.email' }, { 'is_admin': 'teammember.is_admin' })
+      .select({ 'id': 'measurementuser.id' }, { 'user': 'measurementuser.username' }, { 'email': 'measurementuser.email' }, { 'is_admin': 'teammember.is_admin' })
   },
   getGroupMeasures(group_id) {
     return knex.from('teammeasure').where({ 'team_id': group_id })
       .join('measure', 'measure.id', '=', 'teammeasure.measure_id')
       .select({ 'id': 'measure.id' }, { 'name': 'measure.name' })
+  },
+  getGroupInvitations(group_id) {
+    return knex('teaminvitation')
+    .where({ team_id: group_id, response: '' })
+    .orWhere({ team_id: group_id, response: 'declined' })
+    .join('measurementuser', { 'measurementuser.id': 'teaminvitation.invited_id' })
+    .select({ 'invitation_id': 'teaminvitation.id' },
+      { 'response': 'teaminvitation.response' },
+      { 'invited_user': 'measurementuser.username' },
+      { 'invited_email': 'measurementuser.email' })
   },
   postGroup(title, info) {
     return knex('team').insert({ 'title': title, 'info': info })
@@ -75,7 +85,7 @@ module.exports = {
         { 'response': 'teaminvitation.response' },
         { 'group_name': 'team.title' },
         { 'group_info': 'team.info' },
-        { 'invited_name': 'measurementuser.username' },
+        { 'invited_user': 'measurementuser.username' },
         { 'invited_email': 'measurementuser.email' })
   },
   getGroupInvitationByInvited(invited_id, response) {
@@ -91,7 +101,7 @@ module.exports = {
         { 'response': 'teaminvitation.response' },
         { 'group_name': 'team.title' },
         { 'group_info': 'team.info' },
-        { 'inviter_name': 'measurementuser.username' },
+        { 'inviter_user': 'measurementuser.username' },
         { 'inviter_email': 'measurementuser.email' })
   },
   getGroupMeasurement(group_id, measure_id) {

@@ -29,7 +29,8 @@ VALUES
 INSERT INTO "measure" (measurementuser_id,id, name, type, low_limit, high_limit)
 VALUES 
  (-1, 1, 'Mood', 'slider', 0, 100 ),
- (-1, 2, 'Energy', 'slider', 0, 100 );
+ (-1, 2, 'Energy', 'slider', 0, 100 ),
+ (-1, 3, 'Sporty', 'slider', 0, 100 );
 
 
 INSERT INTO "teammeasure" (id, measure_id, team_id) 
